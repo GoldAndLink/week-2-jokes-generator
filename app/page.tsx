@@ -2,7 +2,7 @@
 
 import { useChat } from "ai/react"
 import { useEffect, useRef, useState } from "react"
-≈
+
 const topics = [
   {
     label: "Work",
@@ -33,6 +33,7 @@ export default function Chat() {
   const [shouldRenderParameters, setShouldRenderParameters] = useState(true)
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null) // Duplicate this line for other parameters
   const [usedTopic, setUsedTopic] = useState<string[]>([])
+  const [tempvalue, setTempValue] = useState<string | null>(null)
 
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
@@ -80,20 +81,49 @@ export default function Chat() {
   }
 
   const renderTopicsDropDown = () => (
-    <select
-      className="block w-full mt-1 h-10 bg-blue-500 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50"
-      onChange={(e) => setSelectedTopic(e.target.value)}
-      defaultValue=""
-    >
-      <option value="" disabled hidden>
-        Choose your topic
-      </option>
-      {topics.map((topic) => (
-        <option key={topic.value} value={topic.value}>
-          {topic.label}
+    <>
+      <select
+        className="block w-full mt-1 h-10 bg-blue-500 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50"
+        onChange={(e) => setSelectedTopic(e.target.value)}
+        defaultValue=""
+      >
+        <option value="" disabled hidden>
+          Choose your topic
         </option>
-      ))}
-    </select>
+        {topics.map((topic) => (
+          <option key={topic.value} value={topic.value}>
+            {topic.label}
+          </option>
+        ))}{" "}
+      </select>
+
+      {selectedTopic && (
+        <div className="relative mb-6">
+          <label htmlFor="labels-range-input" className="sr-only">
+            Labels range
+          </label>
+          <input
+            id="labels-range-input"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+            onChange={(e) => setTempValue(e.target.value)}
+          />
+          <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-0 -bottom-6">
+            Min 0
+          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2 -bottom-6">
+            0.5
+          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 absolute end-0 -bottom-6">
+            Max 1
+          </span>
+          <div className="temp-value">{tempvalue}</div>
+        </div>
+      )}
+    </>
   )
 
   return (
