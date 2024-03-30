@@ -1,5 +1,5 @@
 {
-  "name": "chataibot",
+  "name": "my-ai-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "ai": "^3.0.15",
+    "ai": "^3.0.13",
     "next": "14.1.4",
     "openai": "^4.29.2",
     "react": "^18",
