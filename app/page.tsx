@@ -7,7 +7,6 @@ import { useEffect, useRef, useState } from "react";
 // Custom hook for joke generation logic
 function useJokeGenerator() {
   const { messages, isLoading, append } = useChat();
-  const [isReady, setIsReady] = useState(false);
   const [parameters, setParameters] = useState<Parameters>({
     selectedTopic: null,
     selectedTone: null,
@@ -22,7 +21,8 @@ function useJokeGenerator() {
 
   useEffect(() => {
     const { selectedTopic, selectedTone, selectedJokeType } = parameters;
-    setIsReady(!!(selectedTopic && selectedTone && selectedJokeType));
+    const isReady = !!(selectedTopic && selectedTone && selectedJokeType);
+    // setIsReady is removed as it is not used anywhere in the code
   }, [parameters]);
 
   const generateJoke = () => {
@@ -40,8 +40,50 @@ function useJokeGenerator() {
     const prompt = `Generate a ${selectedJokeTypeLabel} joke about ${selectedTopicLabel} with a ${selectedToneLabel} tone.`;
     append({ role: 'user', content: prompt }, { options: { body: { temperature: temperature } } });
   };
+  async function evaluateJoke(joke) {
+    const response = await fetch('/api/evaluate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ joke }),
+    });
 
-  return { parameters, updateParameter, generateJoke, messages, isLoading };
+    if (!response.ok) {
+      throw new Error('Failed to evaluate the joke');
+    }
+
+    // Handling streaming response
+    const reader = response.body.getReader();
+    let chunks = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      chunks += new TextDecoder().decode(value);
+    }
+
+    return chunks; // Returning the accumulated text
+  }
+
+
+  const evaluateLastJoke = async () => {
+    if (messages.length === 0) {
+      console.error("No joke to evaluate");
+      return;
+    }
+    const lastMessage = messages[messages.length - 1].content;
+    try {
+      const evaluation = await evaluateJoke(lastMessage); // Assumes last message is the joke
+      append({ role: 'system', content: `Evaluation: ${evaluation}` });
+    } catch (error) {
+      console.error("Failed to evaluate the joke", error);
+      append({ role: 'system', content: "Failed to evaluate the joke." });
+    }
+  };
+
+  return { parameters, updateParameter, generateJoke, evaluateLastJoke, messages, isLoading };
 }
 
 // Dropdown Component
@@ -88,7 +130,7 @@ const TemperatureSlider: React.FC<TemperatureSliderProps> = ({ temperature, setT
 );
 
 export default function Chat() {
-  const { parameters, updateParameter, generateJoke, messages, isLoading } = useJokeGenerator();
+  const { parameters, updateParameter, generateJoke, evaluateLastJoke, messages, isLoading } = useJokeGenerator();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -97,40 +139,63 @@ export default function Chat() {
     }
   }, [messages]);
 
-    return (
-        <div className="flex flex-col h-screen ">
-            <h1 className="flex items-center justify-center p-4 font-black text-6xl">Joke Generator</h1>
-            <div ref={messagesContainerRef} className="flex-grow overflow-auto mb-4 p-4 max-w-lg mx-auto rounded-lg dark:bg-gray-800">
-                {messages.map((m, index) => (
-                    <div key={index} className={`p-3 m-2 rounded-lg ${m.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-50 text-gray-800'}`}>
-                        {m.role === 'user' ? 'You: ' : 'AI: '} {m.content}
-                    </div>
-                ))}
+  return (
+    <div className="flex flex-col h-screen">
+      <h1 className="flex items-center justify-center p-4 font-black text-6xl">Joke Generator</h1>
+      <div ref={messagesContainerRef}
+           className="flex-grow overflow-auto mb-4 p-4 max-w-lg mx-auto rounded-lg dark:bg-gray-800">
+        {messages.map((m, index) => {
+          // Check if the message is an evaluation
+          const isEvaluation = m.content.startsWith('Evaluation:');
+
+          // Apply different styling if it's an evaluation
+          const messageClasses = isEvaluation ?
+              'p-3 m-2 rounded-lg bg-green-500 text-white' : // Evaluation styling
+              `p-3 m-2 rounded-lg ${m.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-50 text-gray-800'}`; // Regular styling
+
+          return (
+              <div key={index} className={messageClasses}>
+                {m.role === 'user' ? 'You: ' : 'AI: '} {m.content}
+              </div>
+          );
+        })}
+      </div>
+
+      {isLoading && <div className="flex justify-center items-center">
+        <div className="loader"></div>
+      </div>}
+      <section className="w-2/3 mx-auto justify-center items-center">
+        <div className="py-4 shadow-xl dark:bg-gray-800">
+          {parameters.shouldRenderParameters && (
+              <div className="space-y-4 p-4">
+                <Dropdown id="topic" label="Topic" options={topics}
+                          onChange={(value) => updateParameter('selectedTopic', value)}/>
+                <Dropdown id="tone" label="Tone" options={tones}
+                          onChange={(value) => updateParameter('selectedTone', value)}/>
+                <Dropdown id="jokeType" label="Joke Type" options={jokeTypes}
+                          onChange={(value) => updateParameter('selectedJokeType', value)}/>
+              <TemperatureSlider temperature={parameters.temperature}
+                                 setTemperature={(value) => updateParameter('temperature', value)}/>
             </div>
-            {isLoading && <div className="flex justify-center items-center"><div className="loader"></div></div>}
-            <section className="w-2/3 mx-auto justify-center items-center ">
-                <div className="py-4 shadow-xl dark:bg-gray-800">
-                    {parameters.shouldRenderParameters && (
-                        <div className="space-y-4 p-4">
-                            <Dropdown id="topic" label="Topic" options={topics}
-                                      onChange={(value) => updateParameter('selectedTopic', value)}/>
-                            <Dropdown id="tone" label="Tone" options={tones}
-                                      onChange={(value) => updateParameter('selectedTone', value)}/>
-                            <Dropdown id="jokeType" label="Joke Type" options={jokeTypes}
-                                      onChange={(value) => updateParameter('selectedJokeType', value)}/>
-                            <TemperatureSlider temperature={parameters.temperature}
-                                               setTemperature={(value) => updateParameter('temperature', value)}/>
-                        </div>
-                    )}
-                    <button
-                        className={`mt-4 w-full px-4 py-2 font-semibold text-white rounded-lg ${isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
-                        disabled={isLoading}
-                        onClick={generateJoke}
-                    >
-                        Generate Joke
-                    </button>
-                </div>
-            </section>
+          )}
+          <div className='flex justify-between gap-2 p-4 items-center'>
+            <button
+              className={`mt-4 px-4 py-2 font-semibold text-white rounded-lg ${isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+              disabled={isLoading}
+              onClick={generateJoke}
+            >
+              Generate Joke
+            </button>
+            <button
+              className={`mt-4 px-4 py-2 font-semibold text-white rounded-lg ${isLoading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'}`}
+              disabled={isLoading || messages.length === 0}
+              onClick={evaluateLastJoke}
+            >
+              Evaluate Joke
+            </button>
+          </div>
         </div>
-    );
+      </section>
+    </div>
+  );
 }
