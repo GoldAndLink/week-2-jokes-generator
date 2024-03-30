@@ -58,7 +58,7 @@ export default function Chat() {
       append(
         {
           role: "user",
-          content: `Generate another random joke about ${selectedTopic} and a ${selectTone} tone and a ${selectJokeType} joke type`,
+          content: `Generate a random joke about ${selectedTopic} and a ${selectTone} tone and a ${selectJokeType} joke type`,
         },
         { options: { body: { temperature: temperature } } }
       )
