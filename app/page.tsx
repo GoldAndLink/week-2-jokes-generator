@@ -76,7 +76,7 @@ function useJokeGenerator() {
     const lastMessage = messages[messages.length - 1].content;
     try {
       const evaluation = await evaluateJoke(lastMessage); // Assumes last message is the joke
-      // append({ role: 'system', content: `Evaluation: ${evaluation}` });
+      append({ role: 'system', content: `Evaluation: ${evaluation}` });
     } catch (error) {
       console.error("Failed to evaluate the joke", error);
       append({ role: 'system', content: "Failed to evaluate the joke." });
@@ -141,7 +141,7 @@ export default function Chat() {
 
   return (
       <div className="flex flex-col h-screen">
-        <h1 className="flex items-center justify-center p-4 font-black text-6xl text-gray-950">Joke Generator</h1>
+        <h1 className="flex items-center justify-center p-4 font-black text-6xl text-gray-950">Joke Generator 🤡</h1>
         <div ref={messagesContainerRef}
              className="flex-grow overflow-auto mb-4 p-4 max-w-lg mx-auto rounded-lg ">
           {messages.map((m, index) => {
