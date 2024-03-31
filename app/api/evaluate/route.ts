@@ -1,8 +1,11 @@
 import OpenAI from 'openai';
 import { OpenAIStream, StreamingTextResponse } from 'ai';
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+export const runtime = 'edge';
 
 export async function POST(req: Request) {
   const { joke } = await req.json();
@@ -20,7 +23,7 @@ export async function POST(req: Request) {
 
   // Ask OpenAI for a chat completion given the prompt
   const response = await openai.chat.completions.create({
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-4-turbo-preview', // change to gpt-3.5-turbo if gpt-4-turbo-preview is not owrking for you
     stream: true,
     messages: [
       {

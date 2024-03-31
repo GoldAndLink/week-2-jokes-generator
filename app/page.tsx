@@ -40,7 +40,7 @@ function useJokeGenerator() {
     const prompt = `Generate a ${selectedJokeTypeLabel} joke about ${selectedTopicLabel} with a ${selectedToneLabel} tone.`;
     append({ role: 'user', content: prompt }, { options: { body: { temperature: temperature } } });
   };
-  async function evaluateJoke(joke) {
+  async function evaluateJoke(joke: string) {
     const response = await fetch('/api/evaluate', {
       method: 'POST',
       headers: {
@@ -54,10 +54,10 @@ function useJokeGenerator() {
     }
 
     // Handling streaming response
-    const reader = response.body.getReader();
+    const reader = response?.body?.getReader();
     let chunks = '';
     while (true) {
-      const { done, value } = await reader.read();
+      const { done, value } = await reader?.read();
       if (done) {
         break;
       }

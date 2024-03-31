@@ -10,11 +10,11 @@ const openai = new OpenAI({
 export const runtime = 'edge';
  
 export async function POST(req: Request) {
-  const { messages,temperature } = await req.json();
+  const { messages, temperature } = await req.json();
  
   // Ask OpenAI for a streaming chat completion given the prompt
   const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4-turbo-preview', // change to gpt-3.5-turbo if gpt-4-turbo-preview is not owrking for you
     stream: true,
       temperature: temperature,
     messages: [
